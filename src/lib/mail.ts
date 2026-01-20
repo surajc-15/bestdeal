@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 
 // Initialize Resend with API Key
+// Initialize Resend with API Key
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Domain Configuration
@@ -24,7 +25,7 @@ export const sendWelcomeEmail = async (email: string, name: string) => {
         const data = await resend.emails.send({
             from: Senders.ONBOARDING,
             to: [email],
-            reply_to: ADMIN_EMAIL, // User replies go to support/admin
+            replyTo: ADMIN_EMAIL, // User replies go to support/admin
             subject: 'Welcome to BestDeal! 🌾',
             html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -72,7 +73,7 @@ export const sendContactFormEmail = async (data: ContactFormData) => {
         const result = await resend.emails.send({
             from: Senders.SUPPORT,
             to: ADMIN_EMAIL || 'delivered@resend.dev', // Send to admin
-            reply_to: data.email, // Admin replies go to the user
+            replyTo: data.email, // Admin replies go to the user
             subject: `New Contact Request from ${data.firstName}`,
             html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px;">
@@ -124,7 +125,7 @@ export const sendOfferReceivedEmail = async (data: OfferEmailData) => {
         await resend.emails.send({
             from: Senders.NO_REPLY,
             to: data.buyerEmail,
-            reply_to: data.farmerEmail,
+            replyTo: data.farmerEmail,
             subject: `New Offer: ${data.cropType} from ${data.farmerName}`,
             html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
@@ -169,7 +170,7 @@ export const sendOfferMadeEmail = async (data: OfferEmailData) => {
         await resend.emails.send({
             from: Senders.NO_REPLY,
             to: data.farmerEmail,
-            reply_to: data.buyerEmail,
+            replyTo: data.buyerEmail,
             subject: `Offer Sent: ${data.cropType} to ${data.buyerName}`,
             html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
@@ -201,5 +202,58 @@ export const sendOfferMadeEmail = async (data: OfferEmailData) => {
         console.log(`Offer confirmation email sent to ${data.farmerEmail}`);
     } catch (error) {
         console.error("Error sending offer-made email:", error);
+    }
+};
+
+export const sendOfferAcceptedEmail = async (data: {
+    farmerEmail: string;
+    farmerName: string;
+    buyerName: string;
+    buyerEmail: string;
+    buyerPhone: string;
+    cropType: string;
+    quantity: number;
+    price: number;
+    instructions: string;
+}) => {
+    try {
+        await resend.emails.send({
+            from: Senders.NO_REPLY, // Using NO_REPLY as transaction emails usually come from system
+            to: [data.farmerEmail],
+            replyTo: data.buyerEmail, // Farmer can reply directly to Buyer
+            subject: `🎉 Offer Accepted! Sell your ${data.cropType}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #059669;">Great News, ${data.farmerName}!</h2>
+                    <p><strong>${data.buyerName}</strong> has accepted your offer for <strong>${data.cropType}</strong>.</p>
+                    
+                    <div style="background-color: #f0fff4; padding: 20px; border-radius: 8px; border: 1px solid #bbf7d0; margin: 20px 0;">
+                        <h3 style="margin-top:0; color: #047857;">Deal Details</h3>
+                        <p><strong>Quantity:</strong> ${data.quantity.toLocaleString()} kg</p>
+                        <p><strong>Final Price:</strong> ₹${data.price}/kg</p>
+                        <p><strong>Total Value:</strong> ₹${(data.quantity * data.price).toLocaleString()}</p>
+                    </div>
+
+                    <div style="background-color: #fffbeb; padding: 20px; border-radius: 8px; border: 1px solid #fde68a; margin: 20px 0;">
+                        <h3 style="margin-top:0; color: #d97706;">Instructions from Buyer</h3>
+                        <p style="white-space: pre-wrap;">${data.instructions}</p>
+                    </div>
+
+                    <p>Please contact the buyer immediately to arrange the logistics:</p>
+                    <p>
+                        <strong>Phone:</strong> ${data.buyerPhone}<br>
+                        <strong>Email:</strong> ${data.buyerEmail}
+                    </p>
+
+                    <p style="font-size: 14px; color: #666; margin-top: 30px;">
+                        BestDeal Team<br>
+                        We connect farmers directly to buyers.
+                    </p>
+                </div>
+            `
+        });
+        console.log("Offer accepted email sent to:", data.farmerEmail);
+    } catch (error) {
+        console.error("Failed to send offer accepted email:", error);
     }
 };
