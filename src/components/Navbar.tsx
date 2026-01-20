@@ -66,7 +66,7 @@ export function Navbar({ user }: NavbarProps) {
                                     Dashboard
                                 </Link>
                                 <button
-                                    onClick={() => signOut()}
+                                    onClick={() => signOut({ callbackUrl: "/" })}
                                     className="p-2 text-neutral-400 hover:text-red-400 transition-colors"
                                     title="Sign Out"
                                 >
@@ -129,7 +129,7 @@ export function Navbar({ user }: NavbarProps) {
                                 Go to Dashboard
                             </Link>
                             <button
-                                onClick={() => signOut()}
+                                onClick={() => signOut({ callbackUrl: "/" })}
                                 className="px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-lg flex items-center justify-center gap-2"
                             >
                                 <LogOut className="w-4 h-4" /> Sign Out

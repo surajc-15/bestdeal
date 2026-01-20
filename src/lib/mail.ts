@@ -100,3 +100,106 @@ export const sendContactFormEmail = async (data: ContactFormData) => {
         throw error;
     }
 };
+
+/** ---------------- Offer Emails ---------------- */
+
+interface OfferEmailData {
+    buyerName: string;
+    buyerEmail: string;
+    farmerName: string;
+    farmerEmail: string;
+    farmerPhone: string;
+    cropType: string;
+    quantityOffered: number;
+    priceOffered: number;
+    message?: string;
+}
+
+/**
+ * Email to the BUYER when they receive an offer.
+ * Reply-To: Farmer's email
+ */
+export const sendOfferReceivedEmail = async (data: OfferEmailData) => {
+    try {
+        await resend.emails.send({
+            from: Senders.NO_REPLY,
+            to: data.buyerEmail,
+            reply_to: data.farmerEmail,
+            subject: `New Offer: ${data.cropType} from ${data.farmerName}`,
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+            <div style="background-color: #10b981; padding: 20px; text-align: center;">
+                <h2 style="color: white; margin: 0;">New Offer Received! 🎉</h2>
+            </div>
+            <div style="padding: 20px;">
+                <p>Hello <strong>${data.buyerName}</strong>,</p>
+                <p>Great news! Farmer <strong>${data.farmerName}</strong> has made an offer for your request for <strong>${data.cropType}</strong>.</p>
+                
+                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 5px 0;"><strong>Quantity Offered:</strong> ${data.quantityOffered} kg</p>
+                    <p style="margin: 5px 0;"><strong>Price Proposed:</strong> ₹${data.priceOffered}/kg</p>
+                    ${data.message ? `<p style="margin: 5px 0; border-top: 1px solid #e5e7eb; padding-top: 5px;"><strong>Note:</strong> ${data.message}</p>` : ''}
+                </div>
+
+                <p><strong>Farmer Contact Details:</strong></p>
+                <ul style="list-style: none; padding: 0;">
+                    <li>📧 Email: <a href="mailto:${data.farmerEmail}">${data.farmerEmail}</a></li>
+                    <li>📱 Phone: ${data.farmerPhone}</li>
+                </ul>
+
+                <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                    Review this offer in your dashboard to accept or negotiate.
+                </p>
+            </div>
+        </div>
+      `,
+        });
+        console.log(`Offer received email sent to ${data.buyerEmail}`);
+    } catch (error) {
+        console.error("Error sending offer-received email:", error);
+    }
+};
+
+/**
+ * Email to the FARMER confirming their offer.
+ * Reply-To: Buyer's email
+ */
+export const sendOfferMadeEmail = async (data: OfferEmailData) => {
+    try {
+        await resend.emails.send({
+            from: Senders.NO_REPLY,
+            to: data.farmerEmail,
+            reply_to: data.buyerEmail,
+            subject: `Offer Sent: ${data.cropType} to ${data.buyerName}`,
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+            <div style="background-color: #0f172a; padding: 20px; text-align: center;">
+                <h2 style="color: white; margin: 0;">Offer Sent Successfully ✅</h2>
+            </div>
+            <div style="padding: 20px;">
+                <p>Hello <strong>${data.farmerName}</strong>,</p>
+                <p>Your offer has been sent to Buyer <strong>${data.buyerName}</strong> for <strong>${data.cropType}</strong>.</p>
+                
+                <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 5px 0;"><strong>Quantity:</strong> ${data.quantityOffered} kg</p>
+                    <p style="margin: 5px 0;"><strong>Price:</strong> ₹${data.priceOffered}/kg</p>
+                </div>
+
+                <p><strong>Buyer Contact Details:</strong></p>
+                <p>You can contact them directly if needed:</p>
+                <ul style="list-style: none; padding: 0;">
+                    <li>📧 Email: <a href="mailto:${data.buyerEmail}">${data.buyerEmail}</a></li>
+                </ul>
+
+                <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                    We will notify you once the buyer responds to your offer.
+                </p>
+            </div>
+        </div>
+      `,
+        });
+        console.log(`Offer confirmation email sent to ${data.farmerEmail}`);
+    } catch (error) {
+        console.error("Error sending offer-made email:", error);
+    }
+};

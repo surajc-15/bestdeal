@@ -5,7 +5,7 @@ const resend = new Resend("re_JWLQHSzN_CDts2FZ8UGXdY4ks24G7WvLk");
 async function sendTestEmail() {
   await resend.emails.send({
     from: "onboarding@surajc.in",          // sender (your domain)
-    to: "7.maheshappa@gmail.com",                    // receiver (any email)
+    to: "maheshappa.me23@rvce.edu.in",                    // receiver (any email)
     subject: "Hello from BestDeal 🌾",
     html: `
       <div style="font-family: Arial, sans-serif;">

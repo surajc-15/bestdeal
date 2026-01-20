@@ -89,6 +89,8 @@ model FarmerResponse {
   requestId       String
   request         PurchaseRequest @relation(fields: [requestId], references: [id])
   quantityOffered Float
+  pricePerKg      Float   @default(0)
+  message         String?
   status          ResponseStatus  @default(CONNECTED)
   createdAt       DateTime        @default(now())
 

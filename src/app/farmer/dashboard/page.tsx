@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { Role } from "@prisma/client";
@@ -14,59 +15,80 @@ export default async function FarmerDashboard() {
         redirect("/");
     }
 
-    // Fetch Active Requests from Buyers
-    const activeRequests = await prisma.purchaseRequest.findMany({
-        where: { status: "OPEN" },
+    // Fetch Real Requests
+    const realRequests = await prisma.purchaseRequest.findMany({
+        where: { status: 'ACTIVE' },
+        include: { buyer: { select: { name: true } } },
         orderBy: { createdAt: "desc" },
-        include: { user: { select: { name: true } } }, // Include buyer name
     });
 
     return (
-        <div className="min-h-screen bg-neutral-50 p-8 pt-24 font-sans text-neutral-900">
-            <div className="max-w-6xl mx-auto">
+        <div className="min-h-screen bg-neutral-50 p-6 pt-24 font-sans text-neutral-900">
+            <div className="max-w-7xl mx-auto">
                 <header className="mb-8">
                     <h1 className="text-3xl font-bold text-emerald-900">Farmer Dashboard</h1>
-                    <p className="text-neutral-600">Find buyers for your harvest and get the best deals.</p>
+                    <p className="text-neutral-600">Browse active requirements from buyers across India.</p>
                 </header>
 
-                <section>
-                    <h2 className="text-xl font-semibold mb-4">Active Requirements from Buyers</h2>
-                    {activeRequests.length === 0 ? (
-                        <div className="bg-white p-12 rounded-xl border border-neutral-200 text-center">
-                            <p className="text-neutral-500">No active requirements at the moment. Please check back later.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {activeRequests.map((req) => (
-                                <div key={req.id} className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm hover:border-emerald-500 transition group relative">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-bold text-lg group-hover:text-emerald-700 transition">{req.cropName}</h3>
-                                        <span className="text-xs font-mono bg-neutral-100 px-2 py-1 rounded">
-                                            {req.user.name}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {realRequests.map((req) => (
+                        <div key={req.id} className="group relative bg-white rounded-2xl shadow-lg shadow-neutral-100 border border-white/50 p-6 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col h-full bg-gradient-to-br from-white via-white to-emerald-50/50 backdrop-blur-sm ring-1 ring-neutral-100/70">
+
+                            {/* Card Header & Price */}
+                            <div className="mb-5">
+                                <div className="flex justify-between items-start gap-3 mb-2">
+                                    <h3 className="font-bold text-xl text-neutral-800 line-clamp-2 leading-tight group-hover:text-emerald-700 transition-colors">
+                                        {req.cropType}
+                                    </h3>
+                                    <div className="flex flex-col items-end shrink-0">
+                                        <span className="bg-emerald-600 text-white text-sm font-bold px-3 py-1 rounded-full shadow-emerald-200 shadow-md">
+                                            ₹{req.pricePerKg}
                                         </span>
+                                        <span className="text-[10px] text-neutral-400 mt-1 font-medium tracking-wide">PER KG</span>
                                     </div>
-                                    <div className="space-y-2 text-sm text-neutral-600 mb-4">
-                                        <div className="flex justify-between">
-                                            <span>Quantity:</span>
-                                            <span className="font-medium text-black">{req.quantity} {req.unit}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Max Price:</span>
-                                            <span className="font-medium text-emerald-700">₹{req.maxPrice}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Needed By:</span>
-                                            <span>{req.expectedDate.toLocaleDateString()}</span>
-                                        </div>
-                                    </div>
-                                    <button className="w-full py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition">
-                                        Make an Offer
-                                    </button>
                                 </div>
-                            ))}
+                                <div className="flex items-center gap-2 text-xs font-medium text-neutral-500">
+                                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-100 to-yellow-100 flex items-center justify-center text-[10px] text-orange-600 font-bold border border-white shadow-sm">
+                                        {req.buyer.name.charAt(0)}
+                                    </div>
+                                    <span>{req.buyer.name}</span>
+                                </div>
+                            </div>
+
+                            {/* Details Grid */}
+                            <div className="space-y-3 mb-6 flex-grow bg-neutral-50/50 rounded-xl p-3 border border-neutral-100/50">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-neutral-500 font-medium">Quantity</span>
+                                    <span className="font-bold text-neutral-800">{req.quantityRequired.toLocaleString()} kg</span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-neutral-500 font-medium">Location</span>
+                                    <span className="font-semibold text-neutral-800 text-right truncate max-w-[120px]" title={req.location}>
+                                        {req.location}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-neutral-500 font-medium">Delivery</span>
+                                    <span className={`text-xs font-bold px-2 py-0.5 rounded border ${req.deliveryType === 'FARMER_DELIVER'
+                                        ? 'bg-blue-50 text-blue-700 border-blue-100'
+                                        : 'bg-amber-50 text-amber-700 border-amber-100'
+                                        }`}>
+                                        {req.deliveryType === 'FARMER_DELIVER' ? 'You Deliver' : 'Buyer Pickup'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Action Button */}
+                            <Link
+                                href={`/farmer/offers/${req.id}`}
+                                className="w-full py-3 bg-neutral-900 hover:bg-emerald-600 text-white rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-emerald-200 active:scale-[0.98] flex items-center justify-center gap-2 group-hover:gap-3"
+                            >
+                                Make an Offer
+                                <span className="transition-transform group-hover:-rotate-45">→</span>
+                            </Link>
                         </div>
-                    )}
-                </section>
+                    ))}
+                </div>
             </div>
         </div>
     );
