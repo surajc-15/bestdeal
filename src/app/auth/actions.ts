@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { Role } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { signIn } from "@/auth"
+import { sendWelcomeEmail } from "@/lib/mail"
 
 export async function registerUser(prevState: any, formData: FormData) {
     const name = formData.get("name") as string
@@ -34,14 +35,18 @@ export async function registerUser(prevState: any, formData: FormData) {
                 password: hashedPassword,
                 role,
             },
+        },
         })
 
-        return { success: "Account created successfully! Please sign in." }
+    // Send Welcome Email (Non-blocking)
+    sendWelcomeEmail(email, name);
 
-    } catch (error) {
-        console.error("Registration error:", error)
-        return { error: "Something went wrong. Please try again." }
-    }
+    return { success: "Account created successfully! Please sign in." }
+
+} catch (error) {
+    console.error("Registration error:", error)
+    return { error: "Something went wrong. Please try again." }
+}
 }
 
 export async function loginUser(prevState: any, formData: FormData) {
