@@ -5,12 +5,15 @@ import { Role } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { signIn } from "@/auth"
 import { sendWelcomeEmail } from "@/lib/mail"
+import { redirect } from "next/navigation"
 
 export async function registerUser(prevState: any, formData: FormData) {
     const name = formData.get("name") as string
     const email = formData.get("email") as string
     const password = formData.get("password") as string
     const role = formData.get("role") as Role
+    const phone = formData.get("phone") as string
+    const location = formData.get("location") as string
 
     if (!name || !email || !password || !role) {
         return { error: "All fields are required" }
@@ -34,19 +37,21 @@ export async function registerUser(prevState: any, formData: FormData) {
                 email,
                 password: hashedPassword,
                 role,
+                phone,
+                location,
             },
-        },
         })
 
-    // Send Welcome Email (Non-blocking)
-    sendWelcomeEmail(email, name);
+        // Send Welcome Email (Non-blocking)
+        sendWelcomeEmail(email, name);
 
-    return { success: "Account created successfully! Please sign in." }
+    } catch (error) {
+        console.error("Registration error:", error)
+        return { error: "Something went wrong. Please try again." }
+    }
 
-} catch (error) {
-    console.error("Registration error:", error)
-    return { error: "Something went wrong. Please try again." }
-}
+    // Redirect outside of try/catch to avoid catching NEXT_REDIRECT error
+    redirect("/auth/sign-in");
 }
 
 export async function loginUser(prevState: any, formData: FormData) {
@@ -56,6 +61,12 @@ export async function loginUser(prevState: any, formData: FormData) {
         if ((error as Error).message.includes("CredentialsSignin")) {
             return { error: "Invalid credentials." }
         }
-        throw error // NextJS redirects throw errors, so we must rethrow
+        throw error
     }
+
+    // Redirect to dashboard on success (Role based redirection happens in middleware or callback usually, 
+    // but here we can just redirect to home or a logic page. 
+    // Ideally NextAuth's signIn handles the redirect by default unless redirect: false is used. 
+    // If we want custom redirection logic, we can do it here or let NextAuth handle it.)
+    // Since we are using server actions, signIn throws an error to redirect.
 }

@@ -92,7 +92,18 @@ function SignUpContent() {
                         name="phone"
                         type="tel"
                         className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all placeholder:text-neutral-600"
-                        placeholder="+1 234..."
+                        placeholder="+91 98765..."
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-neutral-400 mb-1">Location (City, State)</label>
+                    <input
+                        name="location"
+                        type="text"
+                        required
+                        className="w-full px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all placeholder:text-neutral-600"
+                        placeholder="e.g. Nashik, Maharashtra"
                     />
                 </div>
 

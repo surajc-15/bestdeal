@@ -186,14 +186,15 @@ export default function HomeClient({ session }: { session?: any }) {
                     </div>
 
                     <div className="relative max-w-5xl mx-auto aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-2xl group bg-neutral-900">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="text-center">
-                                <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform cursor-pointer border border-white/20">
-                                    <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                                </div>
-                                <p className="text-neutral-500 font-medium">Coming Soon</p>
-                            </div>
-                        </div>
+                        <video
+                            className="w-full h-full object-cover"
+                            controls
+                            playsInline
+                            poster="/video-poster.jpg"
+                        >
+                            <source src="/bestdealvideo.mp4" type="video/mp4" />
+                            Your browser does not support the video tag.
+                        </video>
                     </div>
                 </div>
             </section>
