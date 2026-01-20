@@ -55,6 +55,240 @@ export const sendWelcomeEmail = async (email: string, name: string) => {
     }
 };
 
+interface DeliveryConfirmationData {
+    farmerEmail: string;
+    farmerName: string;
+    buyerName: string;
+    buyerEmail: string;
+    cropType: string;
+    quantity: number;
+    price: number;
+    totalAmount: number;
+}
+
+/**
+ * Sends delivery confirmation email to both farmer and buyer
+ * Confirms successful delivery and transaction completion
+ */
+export const sendDeliveryConfirmationEmail = async (data: DeliveryConfirmationData) => {
+    try {
+        // Email to Farmer
+        const farmerEmail = await resend.emails.send({
+            from: Senders.NO_REPLY,
+            to: [data.farmerEmail],
+            replyTo: data.buyerEmail,
+            subject: `🎉 Delivery Confirmed - ${data.cropType} Transaction Complete!`,
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #10b981; padding: 30px; border-radius: 12px; background: linear-gradient(to bottom, #f0fdf4, #ffffff);">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #10b981; font-size: 32px; margin: 0;">🎉 Congratulations!</h1>
+                <p style="color: #059669; font-size: 18px; margin-top: 10px;">Delivery Successfully Completed</p>
+            </div>
+            
+            <div style="background-color: white; padding: 20px; border-radius: 8px; border: 2px solid #10b981; margin-bottom: 20px;">
+                <h2 style="color: #047857; margin-top: 0;">Transaction Summary</h2>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-weight: 600;">Product:</td>
+                        <td style="padding: 10px 0; color: #111827; font-weight: bold; text-align: right;">${data.cropType}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-weight: 600;">Quantity Delivered:</td>
+                        <td style="padding: 10px 0; color: #111827; font-weight: bold; text-align: right;">${data.quantity.toLocaleString()} kg</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-weight: 600;">Price per kg:</td>
+                        <td style="padding: 10px 0; color: #111827; font-weight: bold; text-align: right;">₹${data.price.toLocaleString()}</td>
+                    </tr>
+                    <tr style="border-top: 2px solid #10b981;">
+                        <td style="padding: 15px 0; color: #047857; font-weight: bold; font-size: 18px;">Total Amount:</td>
+                        <td style="padding: 15px 0; color: #10b981; font-weight: bold; font-size: 20px; text-align: right;">₹${data.totalAmount.toLocaleString()}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="background-color: #ecfdf5; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin-bottom: 20px;">
+                <p style="margin: 0; color: #047857;"><strong>Buyer:</strong> ${data.buyerName}</p>
+                <p style="margin: 5px 0 0 0; color: #047857;"><strong>Email:</strong> ${data.buyerEmail}</p>
+            </div>
+
+            <p style="color: #374151; line-height: 1.6;">
+                The buyer has confirmed receipt of the delivery. This transaction is now complete. 
+                Thank you for using BestDeal to connect with buyers directly!
+            </p>
+
+            <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #f59e0b;">
+                <p style="margin: 0; color: #92400e; font-size: 14px;">
+                    <strong>💡 Next Steps:</strong> Payment processing will be handled as per your agreement with the buyer. 
+                    For any issues, please contact the buyer directly or reach out to our support team.
+                </p>
+            </div>
+
+            <p style="color: #6b7280; font-size: 12px; margin-top: 30px; text-align: center;">
+                Best Regards,<br/>
+                <strong>Team BestDeal</strong><br/>
+                India's #1 Direct Agricultural Marketplace
+            </p>
+        </div>
+      `,
+        });
+
+        // Email to Buyer
+        const buyerEmail = await resend.emails.send({
+            from: Senders.NO_REPLY,
+            to: [data.buyerEmail],
+            replyTo: data.farmerEmail,
+            subject: `✅ Delivery Confirmed - ${data.cropType} Order Complete`,
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #10b981; padding: 30px; border-radius: 12px; background: linear-gradient(to bottom, #f0fdf4, #ffffff);">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #10b981; font-size: 32px; margin: 0;">✅ Order Complete!</h1>
+                <p style="color: #059669; font-size: 18px; margin-top: 10px;">Delivery Confirmation</p>
+            </div>
+            
+            <div style="background-color: white; padding: 20px; border-radius: 8px; border: 2px solid #10b981; margin-bottom: 20px;">
+                <h2 style="color: #047857; margin-top: 0;">Order Summary</h2>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-weight: 600;">Product:</td>
+                        <td style="padding: 10px 0; color: #111827; font-weight: bold; text-align: right;">${data.cropType}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-weight: 600;">Quantity Received:</td>
+                        <td style="padding: 10px 0; color: #111827; font-weight: bold; text-align: right;">${data.quantity.toLocaleString()} kg</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px 0; color: #6b7280; font-weight: 600;">Price per kg:</td>
+                        <td style="padding: 10px 0; color: #111827; font-weight: bold; text-align: right;">₹${data.price.toLocaleString()}</td>
+                    </tr>
+                    <tr style="border-top: 2px solid #10b981;">
+                        <td style="padding: 15px 0; color: #047857; font-weight: bold; font-size: 18px;">Total Amount:</td>
+                        <td style="padding: 15px 0; color: #10b981; font-weight: bold; font-size: 20px; text-align: right;">₹${data.totalAmount.toLocaleString()}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="background-color: #ecfdf5; padding: 15px; border-radius: 8px; border-left: 4px solid #10b981; margin-bottom: 20px;">
+                <p style="margin: 0; color: #047857;"><strong>Farmer:</strong> ${data.farmerName}</p>
+                <p style="margin: 5px 0 0 0; color: #047857;"><strong>Email:</strong> ${data.farmerEmail}</p>
+            </div>
+
+            <p style="color: #374151; line-height: 1.6;">
+                This email confirms that you have successfully received your order of <strong>${data.quantity.toLocaleString()} kg of ${data.cropType}</strong> 
+                from ${data.farmerName}. The transaction is now complete.
+            </p>
+
+            <p style="color: #374151; line-height: 1.6;">
+                Thank you for using BestDeal! We hope you're satisfied with your purchase.
+            </p>
+
+            <p style="color: #6b7280; font-size: 12px; margin-top: 30px; text-align: center;">
+                Best Regards,<br/>
+                <strong>Team BestDeal</strong><br/>
+                India's #1 Direct Agricultural Marketplace
+            </p>
+        </div>
+      `,
+        });
+
+        if (farmerEmail.error || buyerEmail.error) {
+            console.error("Delivery confirmation email error:", farmerEmail.error || buyerEmail.error);
+            return { success: false, error: farmerEmail.error || buyerEmail.error };
+        }
+
+        console.log("Delivery confirmation emails sent");
+        return { success: true };
+    } catch (error) {
+        console.error("Unexpected error sending delivery confirmation:", error);
+        return { success: false, error };
+    }
+};
+
+interface OfferRejectedData {
+    farmerEmail: string;
+    farmerName: string;
+    buyerName: string;
+    cropType: string;
+    quantityOffered: number;
+    priceOffered: number;
+    rejectionReason?: string;
+}
+
+/**
+ * Sends offer rejection email to farmer
+ * Notifies farmer their offer was not accepted
+ */
+export const sendOfferRejectedEmail = async (data: OfferRejectedData) => {
+    try {
+        await resend.emails.send({
+            from: Senders.NO_REPLY,
+            to: [data.farmerEmail],
+            subject: `Offer Not Accepted - ${data.cropType}`,
+            html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #f59e0b; padding: 30px; border-radius: 12px; background: linear-gradient(to bottom, #fffbeb, #ffffff);">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #d97706; font-size: 28px; margin: 0;">Offer Not Accepted</h1>
+                <p style="color: #92400e; font-size: 16px; margin-top: 10px;">Regarding ${data.cropType}</p>
+            </div>
+            
+            <p style="color: #374151; line-height: 1.6;">
+                Dear ${data.farmerName},
+            </p>
+
+            <p style="color: #374151; line-height: 1.6;">
+                Thank you for your interest in supplying <strong>${data.cropType}</strong> to ${data.buyerName}. 
+                Unfortunately, your offer has not been accepted at this time.
+            </p>
+
+            <div style="background-color: white; padding: 20px; border-radius: 8px; border: 2px solid #fbbf24; margin: 20px 0;">
+                <h3 style="color: #d97706; margin-top: 0;">Your Offer Details</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280;">Quantity Offered:</td>
+                        <td style="padding: 8px 0; color: #111827; font-weight: bold; text-align: right;">${data.quantityOffered.toLocaleString()} kg</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0; color: #6b7280;">Price Offered:</td>
+                        <td style="padding: 8px 0; color: #111827; font-weight: bold; text-align: right;">₹${data.priceOffered.toLocaleString()}/kg</td>
+                    </tr>
+                </table>
+            </div>
+
+            ${data.rejectionReason ? `
+            <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+                <p style="margin: 0; color: #92400e; font-size: 14px;">
+                    <strong>Note from Buyer:</strong><br/>
+                    ${data.rejectionReason}
+                </p>
+            </div>
+            ` : ''}
+
+            <div style="background-color: #dbeafe; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+                <p style="margin: 0; color: #1e40af; font-size: 14px;">
+                    <strong>💡 What's Next?</strong><br/>
+                    You can submit a new offer with adjusted terms if the request is still active. 
+                    Check the dashboard for other available opportunities!
+                </p>
+            </div>
+
+            <p style="color: #374151; line-height: 1.6;">
+                We appreciate your participation in BestDeal and encourage you to continue exploring other opportunities.
+            </p>
+
+            <p style="color: #6b7280; font-size: 12px; margin-top: 30px; text-align: center;">
+                Best Regards,<br/>
+                <strong>Team BestDeal</strong><br/>
+                India's #1 Direct Agricultural Marketplace
+            </p>
+        </div>
+      `,
+        });
+        console.log("Offer rejected email sent to:", data.farmerEmail);
+    } catch (error) {
+        console.error("Failed to send offer rejected email:", error);
+    }
+};
+
 interface ContactFormData {
     firstName: string;
     lastName: string;

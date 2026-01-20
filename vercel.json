@@ -1,0 +1,13 @@
+{
+    "framework": "nextjs",
+    "buildCommand": "npm run build",
+    "outputDirectory": ".next",
+    "functions": {
+        "app/**/route.ts": {
+            "maxDuration": 30
+        },
+        "app/**/actions.ts": {
+            "maxDuration": 30
+        }
+    }
+}

@@ -25,15 +25,15 @@ export function Navbar({ user }: NavbarProps) {
     ]
 
     return (
-        <nav className="border-b border-neutral-800 bg-neutral-900/50 backdrop-blur-md sticky top-0 z-50">
+        <nav className="border-b border-emerald-900/20 bg-gradient-to-r from-neutral-900 via-emerald-950/30 to-neutral-900 backdrop-blur-md sticky top-0 z-50 shadow-lg shadow-emerald-900/10">
             <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
 
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2 group">
-                    <div className="bg-emerald-500/10 p-2 rounded-lg group-hover:bg-emerald-500/20 transition-colors">
-                        <Tractor className="w-6 h-6 text-emerald-500" />
+                    <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 p-2 rounded-lg group-hover:from-emerald-500/30 group-hover:to-emerald-600/20 transition-all shadow-lg shadow-emerald-500/10">
+                        <Tractor className="w-6 h-6 text-emerald-400 group-hover:text-emerald-300 transition-colors" />
                     </div>
-                    <span className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
+                    <span className="text-xl font-bold bg-gradient-to-r from-emerald-400 via-emerald-300 to-teal-400 bg-clip-text text-transparent drop-shadow-sm">
                         BestDeal
                     </span>
                 </Link>
@@ -45,7 +45,7 @@ export function Navbar({ user }: NavbarProps) {
                             <Link
                                 key={link.name}
                                 href={link.href}
-                                className={`text-sm font-medium transition-colors hover:text-emerald-400 ${pathname === link.href ? "text-emerald-400" : "text-neutral-400"
+                                className={`text-sm font-semibold transition-colors hover:text-emerald-400 ${pathname === link.href ? "text-emerald-400" : "text-neutral-300"
                                     }`}
                             >
                                 {link.name}
@@ -61,7 +61,7 @@ export function Navbar({ user }: NavbarProps) {
                                 <span className="text-sm text-neutral-400 hidden lg:block">Hello, {user.name}</span>
                                 <Link
                                     href={user.role === "FARMER" ? "/farmer/dashboard" : "/buyer/dashboard"}
-                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-900/20"
+                                    className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-lg font-medium transition-all text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-400/40 hover:scale-105"
                                 >
                                     Dashboard
                                 </Link>

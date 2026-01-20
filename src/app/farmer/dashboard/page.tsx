@@ -15,9 +15,12 @@ export default async function FarmerDashboard() {
         redirect("/");
     }
 
-    // Fetch Real Requests with User's Response Status
+    // Fetch Real Requests with User's Response Status (Only ACTIVE requests)
     const requests = await prisma.purchaseRequest.findMany({
-        where: { status: 'ACTIVE' },
+        where: {
+            status: 'ACTIVE',
+            quantityRemaining: { gt: 0 } // Only show requests with remaining quantity
+        },
         include: {
             buyer: { select: { name: true } },
             responses: {
@@ -28,43 +31,51 @@ export default async function FarmerDashboard() {
         orderBy: { createdAt: "desc" },
     });
 
-    // Custom Sort: Accepted > Sent (Pending/Connected) > New
+    // Custom Sort: Sent (Connected/Pending) > New
     const realRequests = requests.sort((a, b) => {
-        const aStatus = a.responses[0]?.status;
-        const bStatus = b.responses[0]?.status;
+        const aHasOffer = a.responses.length > 0;
+        const bHasOffer = b.responses.length > 0;
 
-        if (aStatus === 'ACCEPTED') return -1;
-        if (bStatus === 'ACCEPTED') return 1;
-        if (aStatus === 'CONNECTED' && !bStatus) return -1;
-        if (!aStatus && bStatus === 'CONNECTED') return 1;
+        if (aHasOffer && !bHasOffer) return -1;
+        if (!aHasOffer && bHasOffer) return 1;
         return 0;
     });
 
     return (
-        <div className="min-h-screen bg-neutral-50 p-6 pt-24 font-sans text-neutral-900">
+        <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-emerald-50/30 to-neutral-50 p-6 pt-24 font-sans text-neutral-900">
             <div className="max-w-7xl mx-auto">
-                <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-emerald-900">Farmer Dashboard</h1>
-                    <p className="text-neutral-600">Browse active requirements from buyers across India.</p>
+                {/* Header with gradient background */}
+                <header className="mb-8 bg-gradient-to-r from-emerald-600 to-emerald-500 rounded-2xl p-6 shadow-xl shadow-emerald-200/50 relative overflow-hidden flex justify-between items-center">
+                    {/* Decorative elements */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-400/20 rounded-full blur-2xl"></div>
+
+                    <div className="relative z-10">
+                        <h1 className="text-3xl font-bold text-white mb-1 drop-shadow-lg">Farmer Dashboard</h1>
+                        <p className="text-emerald-100 text-sm">Browse active requirements from buyers across India</p>
+                    </div>
+                    <Link
+                        href="/farmer/deals"
+                        className="relative z-10 px-5 py-2 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border border-white/30 rounded-full text-sm font-medium transition-all hover:scale-105 shadow-lg"
+                    >
+                        📦 My Deals
+                    </Link>
                 </header>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-neutral-800">Available Requests</h2>
+                    <div className="text-sm text-neutral-500 bg-white px-4 py-2 rounded-full shadow-sm">
+                        {realRequests.length} {realRequests.length === 1 ? 'Request' : 'Requests'}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                     {realRequests.map((req) => {
-                        const myOffer = req.responses[0]; // Since we filtered by farmerId, this is their offer if exists
+                        const myOffer = req.responses[0]; // Pending offer if exists
                         const hasOffered = !!myOffer;
-                        const isAccepted = myOffer?.status === 'ACCEPTED';
 
                         return (
                             <div key={req.id} className="group relative bg-white rounded-2xl shadow-lg shadow-neutral-100 border border-white/50 p-6 hover:-translate-y-1 hover:shadow-xl transition-all duration-300 flex flex-col h-full bg-gradient-to-br from-white via-white to-emerald-50/50 backdrop-blur-sm ring-1 ring-neutral-100/70">
-
-                                {/* Notification Batch for Updates */}
-                                <div className="absolute -top-3 -right-3 z-20 animate-bounce">
-                                    <div className="bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg border-2 border-white flex items-center gap-2">
-                                        <span>Accepted! 🎉</span>
-                                        <span className="w-px h-3 bg-emerald-400"></span>
-                                        <span className="font-normal text-emerald-50">Check Email 📩</span>
-                                    </div>
-                                </div>
 
                                 {/* Card Header & Price */}
                                 <div className="mb-5">
@@ -91,7 +102,7 @@ export default async function FarmerDashboard() {
                                 <div className="space-y-3 mb-6 flex-grow bg-neutral-50/50 rounded-xl p-3 border border-neutral-100/50">
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-neutral-500 font-medium">Quantity</span>
-                                        <span className="font-bold text-neutral-800">{req.quantityRequired.toLocaleString()} kg</span>
+                                        <span className="font-bold text-neutral-800">{req.quantityRemaining.toLocaleString()} kg</span>
                                     </div>
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-neutral-500 font-medium">Location</span>
@@ -114,12 +125,9 @@ export default async function FarmerDashboard() {
                                 {hasOffered ? (
                                     <button
                                         disabled
-                                        className={`w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-not-allowed ${isAccepted
-                                            ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                                            : 'bg-neutral-100 text-neutral-400 border border-neutral-200'
-                                            }`}
+                                        className="w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-not-allowed bg-gradient-to-r from-neutral-100 to-neutral-50 text-neutral-400 border-2 border-neutral-200"
                                     >
-                                        {isAccepted ? 'Offer Accepted ✅' : 'Offer Sent ⏳'}
+                                        Offer Sent ⏳
                                     </button>
                                 ) : (
                                     <Link

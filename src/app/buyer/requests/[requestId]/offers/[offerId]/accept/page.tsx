@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import AcceptOfferForm from "./AcceptOfferForm";
+import { RejectOfferButton } from "../RejectOfferButton";
 
 export default async function AcceptOfferPage(props: { params: Promise<{ requestId: string; offerId: string }> }) {
     const params = await props.params;
@@ -42,6 +43,13 @@ export default async function AcceptOfferPage(props: { params: Promise<{ request
                         initialQuantity={offer.quantityOffered}
                         initialPrice={offer.pricePerKg}
                     />
+
+                    <div className="mt-6 pt-6 border-t border-neutral-200">
+                        <p className="text-sm text-neutral-500 mb-3 text-center">Not interested in this offer?</p>
+                        <div className="flex justify-center">
+                            <RejectOfferButton offerId={offer.id} />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

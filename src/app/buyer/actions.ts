@@ -16,6 +16,10 @@ export async function acceptOffer(prevState: any, formData: FormData) {
 
     if (!offerId || !instructions || !finalQuantity || !finalPrice) return { error: "Missing required fields" };
 
+    // Validation: Positive values
+    if (finalQuantity <= 0) return { error: "Quantity must be greater than zero" };
+    if (finalPrice <= 0) return { error: "Price must be greater than zero" };
+
     try {
         // 1. Fetch Offer to verify ownership match (optional additional security)
         const offer = await prisma.farmerResponse.findUnique({
@@ -26,7 +30,33 @@ export async function acceptOffer(prevState: any, formData: FormData) {
         if (!offer) return { error: "Offer not found" };
         if (offer.request.buyerId !== session.user.id) return { error: "Unauthorized" };
 
-        // 2. Create Transaction
+        // Validation: Cannot accept more than remaining quantity
+        if (finalQuantity > offer.request.quantityRemaining) {
+            return {
+                error: `Cannot accept ${finalQuantity} kg. Only ${offer.request.quantityRemaining} kg remaining in this request.`
+            };
+        }
+
+        // Validation: Cannot accept more than offered quantity
+        if (finalQuantity > offer.quantityOffered) {
+            return {
+                error: `Cannot accept ${finalQuantity} kg. Farmer only offered ${offer.quantityOffered} kg.`
+            };
+        }
+
+        // 2. Update Request Quantity (Smart Logic)
+        const newQuantityRemaining = offer.request.quantityRemaining - finalQuantity;
+        const shouldComplete = newQuantityRemaining <= 0;
+
+        await prisma.purchaseRequest.update({
+            where: { id: offer.requestId },
+            data: {
+                quantityRemaining: Math.max(0, newQuantityRemaining),
+                status: shouldComplete ? 'COMPLETED' : offer.request.status
+            }
+        });
+
+        // 3. Create Transaction
         await prisma.transaction.create({
             data: {
                 buyerId: session.user.id,
@@ -38,13 +68,13 @@ export async function acceptOffer(prevState: any, formData: FormData) {
             }
         });
 
-        // 3. Update Offer Status
+        // 4. Update Offer Status
         await prisma.farmerResponse.update({
             where: { id: offerId },
             data: { status: "ACCEPTED" }
         });
 
-        // 4. Send Email
+        // 5. Send Email
         await sendOfferAcceptedEmail({
             farmerEmail: offer.farmer.email!,
             farmerName: offer.farmer.name!,
@@ -58,10 +88,59 @@ export async function acceptOffer(prevState: any, formData: FormData) {
         });
 
         revalidatePath("/buyer/dashboard");
+        revalidatePath("/farmer/dashboard");
         return { success: true };
 
     } catch (error) {
         console.error("Error accepting offer:", error);
         return { error: "Failed to accept offer" };
+    }
+}
+
+export async function markDeliveryComplete(transactionId: string) {
+    const session = await auth();
+    if (!session?.user) return { error: "Not authenticated" };
+
+    try {
+        // Fetch full transaction details for email
+        const transaction = await prisma.transaction.findUnique({
+            where: { id: transactionId },
+            include: {
+                buyer: { select: { name: true, email: true } },
+                farmer: { select: { name: true, email: true } },
+                request: { select: { cropType: true } }
+            }
+        });
+
+        if (!transaction) return { error: "Transaction not found" };
+        if (transaction.buyerId !== session.user.id) return { error: "Unauthorized" };
+        if (transaction.status === 'COMPLETED') return { error: "Already completed" };
+
+        // Update transaction status to COMPLETED
+        await prisma.transaction.update({
+            where: { id: transactionId },
+            data: { status: 'COMPLETED' }
+        });
+
+        // Send delivery confirmation emails to both parties
+        const { sendDeliveryConfirmationEmail } = await import("@/lib/mail");
+        await sendDeliveryConfirmationEmail({
+            farmerEmail: transaction.farmer.email!,
+            farmerName: transaction.farmer.name!,
+            buyerName: transaction.buyer.name!,
+            buyerEmail: transaction.buyer.email!,
+            cropType: transaction.request.cropType,
+            quantity: transaction.quantitySold,
+            price: transaction.totalAmount / transaction.quantitySold,
+            totalAmount: transaction.totalAmount
+        });
+
+        revalidatePath("/buyer/deals");
+        revalidatePath("/farmer/deals");
+        return { success: true, message: "Delivery confirmed! Both parties have been notified via email." };
+
+    } catch (error) {
+        console.error("Error marking delivery complete:", error);
+        return { error: "Failed to update status" };
     }
 }

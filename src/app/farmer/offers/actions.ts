@@ -28,6 +28,17 @@ export async function submitOffer(prevState: any, formData: FormData) {
 
         if (!request) return { error: "Request not found" };
 
+        // Validation: Cannot offer more than remaining quantity
+        if (quantity > request.quantityRemaining) {
+            return {
+                error: `Request only needs ${request.quantityRemaining} kg. Please adjust your offer to match the available quantity.`
+            };
+        }
+
+        // Validation: Positive values
+        if (quantity <= 0) return { error: "Quantity must be greater than zero" };
+        if (pricePerKg <= 0) return { error: "Price must be greater than zero" };
+
         // 2. Fetch Farmer Details (User who is logged in)
         const farmer = await prisma.user.findUnique({
             where: { id: session.user.id }
@@ -35,9 +46,29 @@ export async function submitOffer(prevState: any, formData: FormData) {
 
         if (!farmer) return { error: "Farmer profile not found" };
 
-        // 3. Create Offer in DB
-        // Note: You need to ensure FarmerResponse model allows these fields. 
-        // Based on previous schema assumption, we might need to adjust if schema differs.
+        // 3. Check for existing offers from this farmer
+        const existingOffer = await prisma.farmerResponse.findUnique({
+            where: {
+                farmerId_requestId: {
+                    farmerId: farmer.id,
+                    requestId: requestId
+                }
+            }
+        });
+
+        // If there's an existing CONNECTED (pending) offer, prevent duplicate
+        if (existingOffer && existingOffer.status === 'CONNECTED') {
+            return { error: "You already have a pending offer for this request" };
+        }
+
+        // If there's an existing ACCEPTED offer, delete it to allow a new offer
+        if (existingOffer && existingOffer.status === 'ACCEPTED') {
+            await prisma.farmerResponse.delete({
+                where: { id: existingOffer.id }
+            });
+        }
+
+        // 4. Create New Offer in DB
         const offer = await prisma.farmerResponse.create({
             data: {
                 requestId: requestId,
@@ -49,7 +80,7 @@ export async function submitOffer(prevState: any, formData: FormData) {
             }
         });
 
-        // 4. Send Emails
+        // 5. Send Emails
         const emailData = {
             buyerName: request.buyer.name || "Buyer",
             buyerEmail: request.buyer.email!,
