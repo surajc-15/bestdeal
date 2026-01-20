@@ -1,0 +1,121 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/* ================= ENUMS ================= */
+
+enum Role {
+  FARMER
+  BUYER
+}
+
+enum DeliveryType {
+  FARMER_DELIVER
+  BUYER_PICKUP
+}
+
+enum RequestStatus {
+  ACTIVE
+  VERIFICATION
+  COMPLETED
+  PASSIVE
+}
+
+enum ResponseStatus {
+  CONNECTED
+  ACCEPTED
+  REJECTED
+}
+
+enum TransactionStatus {
+  PENDING
+  VERIFIED
+  PAID
+  COMPLETED
+}
+
+enum UploadedBy {
+  FARMER
+  BUYER
+}
+
+/* ================= MODELS ================= */
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  role      Role     @default(BUYER)
+  location  String?
+  createdAt DateTime @default(now())
+
+  purchaseRequests   PurchaseRequest[]
+  farmerResponses    FarmerResponse[]
+  buyerTransactions  Transaction[] @relation("BuyerTransactions")
+  farmerTransactions Transaction[] @relation("FarmerTransactions")
+}
+
+model PurchaseRequest {
+  id                String        @id @default(cuid())
+  buyerId           String
+  buyer             User          @relation(fields: [buyerId], references: [id])
+  cropType          String
+  quantityRequired  Float
+  quantityRemaining Float
+  pricePerKg        Float
+  location          String
+  deliveryType      DeliveryType
+  transportCharge   Float?
+  instructions      String?
+  status            RequestStatus @default(ACTIVE)
+  createdAt         DateTime      @default(now())
+
+  responses    FarmerResponse[]
+  transactions Transaction[]
+}
+
+model FarmerResponse {
+  id              String          @id @default(cuid())
+  farmerId        String
+  farmer          User            @relation(fields: [farmerId], references: [id])
+  requestId       String
+  request         PurchaseRequest @relation(fields: [requestId], references: [id])
+  quantityOffered Float
+  status          ResponseStatus  @default(CONNECTED)
+  createdAt       DateTime        @default(now())
+
+  @@unique([farmerId, requestId])
+}
+
+model Transaction {
+  id           String            @id @default(cuid())
+  buyerId      String
+  buyer        User              @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  farmerId     String
+  farmer       User              @relation("FarmerTransactions", fields: [farmerId], references: [id])
+  requestId    String
+  request      PurchaseRequest   @relation(fields: [requestId], references: [id])
+  quantitySold Float
+  totalAmount  Float
+  status       TransactionStatus @default(PENDING)
+  createdAt    DateTime          @default(now())
+
+  receipts Receipt[]
+}
+
+model Receipt {
+  id            String       @id @default(cuid())
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  uploadedBy    UploadedBy
+  fileUrl       String
+  createdAt     DateTime     @default(now())
+}
