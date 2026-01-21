@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { Role } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { signIn } from "@/auth"
+import { AuthError } from "next-auth"
 import { sendWelcomeEmail } from "@/lib/mail"
 import { redirect } from "next/navigation"
 
@@ -56,12 +57,20 @@ export async function registerUser(prevState: any, formData: FormData) {
 
 export async function loginUser(prevState: any, formData: FormData) {
     try {
-        await signIn("credentials", formData)
+        await signIn("credentials", {
+            email: formData.get("email"),
+            password: formData.get("password"),
+            redirectTo: "/",
+        })
     } catch (error) {
-        if ((error as Error).message.includes("CredentialsSignin")) {
-            return { error: "Invalid credentials." }
+        if (error instanceof AuthError) {
+            if (error.type === "CredentialsSignin") {
+                return { error: "Invalid credentials." }
+            }
+            return { error: "Unable to sign in right now." }
         }
-        throw error
+
+        return { error: "Unexpected error. Please try again." }
     }
 
     // Redirect to dashboard on success (Role based redirection happens in middleware or callback usually, 
